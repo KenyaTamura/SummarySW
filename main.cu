@@ -1,7 +1,9 @@
 #include<iostream>
 #include<fstream>
 #include<string>
+
 #include"Data.h"
+#include"SimpleSW.h"
 
 using namespace std;
 
@@ -18,5 +20,6 @@ int main(int argc, char* argv[]) {
 */
 	Data base(10000);	
 	Data query(20);
+	SimpleSW(base,query,10);
 	return 0;
 }

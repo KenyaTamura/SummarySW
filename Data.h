@@ -10,7 +10,7 @@ public:
 	Data(int num);
 	char operator[](int i) const;
 	int size() const;
-	char* data() const;
+	const char* data() const;
 	~Data();
 private:
 	char* mData;

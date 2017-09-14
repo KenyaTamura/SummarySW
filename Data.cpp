@@ -61,7 +61,7 @@ int Data::size() const {
 	return mSize;
 }
 
-char* Data::data() const{
+const char* Data::data() const{
 	return mData;
 }
 
