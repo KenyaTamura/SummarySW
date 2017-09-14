@@ -4,6 +4,8 @@
 
 #include"Data.h"
 #include"SimpleSW.h"
+#include"Preprocess.h"
+#include"PreprocessSW.h"
 
 using namespace std;
 
@@ -20,6 +22,9 @@ int main(int argc, char* argv[]) {
 */
 	Data base(10000);	
 	Data query(20);
-	SimpleSW(base,query,10);
+	int threshold = 10;
+	cout << "Original = " << query.data() << endl;
+//	SimpleSW(base, query, threshold);
+	PreprocessSW(base, query, Preprocess(base, query, threshold), threshold);
 	return 0;
 }

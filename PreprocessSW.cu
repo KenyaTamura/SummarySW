@@ -6,8 +6,9 @@
 #include<iostream>
 #include<iomanip>
 
-#include"SimpleSW.h"
+#include"PreprocessSW.h"
 #include"Data.h"
+#include"Preprocess.h"
 #include"Gain.h"
 
 // Lenght of each data
@@ -35,12 +36,10 @@ enum{
 
 using namespace std;
 
-SimpleSW::SimpleSW(const Data& txt, const Data& ptn, int threshold){
-	cout << "At the begining of the SW algorithm (Simple)" << endl;
+PreprocessSW::PreprocessSW(const Data& txt, const Data& ptn, const Preprocess& prepro, int threshold){
 	// Sieze check
-	// TODO Max size
 	if(ptn.size() > 1024 || ptn.size() * txt.size() > 1024 * 1024 * 1024){
-		std::cout << "Too large size" << std::endl;
+		cout << "Too large size" << endl;
 		return;
 	}
 	// Set value in constant memory
@@ -57,21 +56,25 @@ SimpleSW::SimpleSW(const Data& txt, const Data& ptn, int threshold){
 	cudaMemcpyToSymbol(gcMiss, &gain, sizeof(int));
 	gain = EXT;
 	cudaMemcpyToSymbol(gcExtend, &gain, sizeof(int));
-	gain = -BEG;
+	gain = BEG;
 	cudaMemcpyToSymbol(gcBegin, &gain, sizeof(int));
 	// Dynamic Programing part by call_DP
-	call_DP(txt, ptn);
-	std::cout << "At the End of the SW algorithm" << std::endl;
+	call_DP(txt, ptn, prepro);
+	std::cout << "End of the SW algorithm" << std::endl;
 }
 
-SimpleSW::~SimpleSW(){
+PreprocessSW::~PreprocessSW(){
 
 }
 
 // Implementation 
-__global__ void DP(char* dT_seq, char* dTrace, int* dScore){
+__global__ void DP(char* dT_seq, int* dRange, char* dTrace, int* dScore){
 	// ThreadId = ptn point
 	int id = threadIdx.x;
+	// BlockId shows begin point of txt
+	int bId = blockIdx.x;
+	int start = dRange[bId * 2];
+	int end = dRange[bId * 2 + 1] + gcP_size;
 	// The acid in this thread
 	char p = gcP_seq[id];
 	// p-1 row line's value
@@ -90,11 +93,11 @@ __global__ void DP(char* dT_seq, char* dTrace, int* dScore){
 	Ep_1[id] = 0;
 	// Similar score
 	int sim = 0;
-	int point = id * gcT_size - id;
+	int point = id * gcT_size - id + start;
 	// Culcurate elements
-	for(int t = -id; t < gcT_size; ++t){
+	for(int t = start - id; t < end + 1; ++t){
 		// Control culcurate order
-		if(t<0){}
+		if(t<start){}
 		// Get similar score
 		else{
 			// Compare acids
@@ -150,7 +153,7 @@ __global__ void DP(char* dT_seq, char* dTrace, int* dScore){
 		__syncthreads();
 		// Set value need next culcurate
 		// p+1 row line
-		if(t >= 0){
+		if(t >= start){
 			Hp_1[id + 1] = Ht_1;
 			Ep_1[id + 1] = Ep_1_buf;
 			// DEBUG, score check
@@ -171,7 +174,7 @@ __global__ void DP(char* dT_seq, char* dTrace, int* dScore){
 }
 
 // Provisional
-void SimpleSW::call_DP(const Data& txt, const Data& ptn){
+void PreprocessSW::call_DP(const Data& txt, const Data& ptn, const Preprocess& prepro){
 	// Set txt
 	char* dT_seq;
 	cudaMalloc((void**)&dT_seq, sizeof(char)*txt.size());
@@ -185,12 +188,16 @@ void SimpleSW::call_DP(const Data& txt, const Data& ptn){
 	int* init0 = new int[txt.size()];
 	for(int i=0;i<txt.size();++i){init0[i]=0;}
 	cudaMemcpy(dScore, init0, sizeof(int)*txt.size(), cudaMemcpyHostToDevice);
+	// Get block data
+	int blockNum = prepro.block();
+	int* dRange = new int[blockNum];
+	cudaMalloc((void**)&dRange, sizeof(int)*blockNum*2);
+	cudaMemcpy(dRange, prepro.getAll(), sizeof(int)*blockNum*2, cudaMemcpyHostToDevice);	
 	// Main process
-	DP<<<1,ptn.size()>>>(dT_seq, dTrace, dScore);	
+	DP<<<blockNum,ptn.size()>>>(dT_seq, dRange, dTrace, dScore);	
 	// Direction copy
 	char* direction = new char[txt.size()*ptn.size()];
 	cudaMemcpy(direction, dTrace, sizeof(char)*txt.size()*ptn.size(), cudaMemcpyDeviceToHost);	
-	// Degug 
 //	show(direction,txt,ptn);
 	// Score and point copy
 	int* score = new int[txt.size()];
@@ -203,10 +210,11 @@ void SimpleSW::call_DP(const Data& txt, const Data& ptn){
 	cudaFree(dT_seq);
 	cudaFree(dTrace);
 	cudaFree(dScore);
+	cudaFree(dRange);
 }
 
 // score -> 0~16 : 17~31 = score : point of ptn
-void SimpleSW::checkScore(const char* direction, const int* score, const Data& txt) const{
+void PreprocessSW::checkScore(const char* direction, const int* score, const Data& txt) const{
 	// get the max score
 	int x = 0, y = 0, max = 0;
 	for(int i=0; i<txt.size(); ++i){
@@ -217,13 +225,13 @@ void SimpleSW::checkScore(const char* direction, const int* score, const Data& t
 			max = result;
 		}
 	}
-	std::cout << "max score is " << max << std::endl;
+	cout << "max score is " << max << endl;
 	if(max != 0){
 		traceback(direction, txt, x, y);
 	}
 }
 
-void SimpleSW::traceback(const char* direction, const Data& txt, int txt_point, int ptn_point) const{
+void PreprocessSW::traceback(const char* direction, const Data& txt, int txt_point, int ptn_point) const{
 	// Store the result, get enough size
 	char *ans = new char[1024 * 2];
 	// Point of result array
@@ -248,6 +256,10 @@ void SimpleSW::traceback(const char* direction, const Data& txt, int txt_point, 
 			break;
 		case Zero:	// End
 			trace = -1;
+			break;
+		default:	// Didn't use
+			trace = -1;
+			break;
 		}
 	}
 	// This array has reverse answer
@@ -257,18 +269,18 @@ void SimpleSW::traceback(const char* direction, const Data& txt, int txt_point, 
 }
 
 
-void SimpleSW::show(const char* score, const Data& txt, const Data& ptn) const{
-	std::cout << "  ";
+void PreprocessSW::show(const char* score, const Data& txt, const Data& ptn) const{
+	cout << "  ";
 	for(int i=0; i < ptn.size(); ++i){
-		std::cout << "  "  << ptn[i];
+		cout << "  "  << ptn[i];
 	}
-	std::cout << std::endl;
+	cout << endl;
 	for(int t=0; t < txt.size(); ++t){
-		std::cout << txt[t] << " ";
+		cout << txt[t] << " ";
 		for(int p=0; p < ptn.size(); ++p){
-			std::cout << std::setw(3) << static_cast<int>(score[t + p*txt.size()]);
+			cout << setw(3) << static_cast<int>(score[t + p*txt.size()]);
 		}
-		std::cout << std::endl;
+		cout << endl;
 	}
 }
 
