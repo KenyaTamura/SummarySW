@@ -11,7 +11,7 @@ Preprocess::Preprocess(const Data& txt, const Data& ptn, const int threshold) : 
 		cout << "Reverse txt and ptn" << endl;
 		return;
 	}
-	cout << "The Beginning of the preprocess" << endl;
+	cout << "At the beginning of the preprocess" << endl;
 	// The search range of origin
 	list<int> range;
 	// Check the range
@@ -23,7 +23,7 @@ Preprocess::Preprocess(const Data& txt, const Data& ptn, const int threshold) : 
 //	for (int i = 0; i < mBlock; ++i) {
 //		cout << mRange[i * 2] << '~' << mRange[i * 2 + 1] << ' ';
 //	}
-	cout << "\nThe end of the preprocess" << endl;
+	cout << "At the end of the preprocess" << endl;
 }
 
 Preprocess::~Preprocess() {

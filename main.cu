@@ -24,7 +24,8 @@ int main(int argc, char* argv[]) {
 	Data query(20);
 	int threshold = 10;
 	cout << "Original = " << query.data() << endl;
-//	SimpleSW(base, query, threshold);
+	SimpleSW(base, query, threshold);
+	cout << endl;
 	PreprocessSW(base, query, Preprocess(base, query, threshold), threshold);
 	return 0;
 }

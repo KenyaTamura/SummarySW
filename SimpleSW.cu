@@ -40,7 +40,7 @@ SimpleSW::SimpleSW(const Data& txt, const Data& ptn, int threshold){
 	// Sieze check
 	// TODO Max size
 	if(ptn.size() > 1024 || ptn.size() * txt.size() > 1024 * 1024 * 1024){
-		std::cout << "Too large size" << std::endl;
+		cout << "Too large size" << endl;
 		return;
 	}
 	// Set value in constant memory
@@ -57,11 +57,11 @@ SimpleSW::SimpleSW(const Data& txt, const Data& ptn, int threshold){
 	cudaMemcpyToSymbol(gcMiss, &gain, sizeof(int));
 	gain = EXT;
 	cudaMemcpyToSymbol(gcExtend, &gain, sizeof(int));
-	gain = -BEG;
+	gain = BEG;
 	cudaMemcpyToSymbol(gcBegin, &gain, sizeof(int));
 	// Dynamic Programing part by call_DP
 	call_DP(txt, ptn);
-	std::cout << "At the End of the SW algorithm" << std::endl;
+	cout << "At the end of the SW algorithm" << endl;
 }
 
 SimpleSW::~SimpleSW(){
@@ -217,7 +217,7 @@ void SimpleSW::checkScore(const char* direction, const int* score, const Data& t
 			max = result;
 		}
 	}
-	std::cout << "max score is " << max << std::endl;
+	cout << "max score is " << max << endl;
 	if(max != 0){
 		traceback(direction, txt, x, y);
 	}
@@ -258,17 +258,17 @@ void SimpleSW::traceback(const char* direction, const Data& txt, int txt_point, 
 
 
 void SimpleSW::show(const char* score, const Data& txt, const Data& ptn) const{
-	std::cout << "  ";
+	cout << "  ";
 	for(int i=0; i < ptn.size(); ++i){
-		std::cout << "  "  << ptn[i];
+		cout << "  "  << ptn[i];
 	}
-	std::cout << std::endl;
+	cout << endl;
 	for(int t=0; t < txt.size(); ++t){
-		std::cout << txt[t] << " ";
+		cout << txt[t] << " ";
 		for(int p=0; p < ptn.size(); ++p){
-			std::cout << std::setw(3) << static_cast<int>(score[t + p*txt.size()]);
+			cout << setw(3) << static_cast<int>(score[t + p*txt.size()]);
 		}
-		std::cout << std::endl;
+		cout << endl;
 	}
 }
 
