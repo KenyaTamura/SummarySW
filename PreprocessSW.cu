@@ -42,6 +42,7 @@ PreprocessSW::PreprocessSW(const Data& txt, const Data& ptn, const Preprocess& p
 		cout << "Too large size" << endl;
 		return;
 	}
+	cout << "At the beginning of the SW algorithm (Preprocess)" << endl;
 	// Set value in constant memory
 	int tsize = txt.size();
 	int psize = ptn.size();
@@ -60,7 +61,7 @@ PreprocessSW::PreprocessSW(const Data& txt, const Data& ptn, const Preprocess& p
 	cudaMemcpyToSymbol(gcBegin, &gain, sizeof(int));
 	// Dynamic Programing part by call_DP
 	call_DP(txt, ptn, prepro);
-	std::cout << "End of the SW algorithm" << std::endl;
+	std::cout << "At the End of the SW algorithm" << std::endl;
 }
 
 PreprocessSW::~PreprocessSW(){

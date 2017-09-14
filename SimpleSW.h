@@ -1,5 +1,5 @@
-#ifndef SW_CUH
-#define SW_CUH
+#ifndef SIMPLESW_CUH
+#define SIMPLESW_CUH
 
 class Data;
 
