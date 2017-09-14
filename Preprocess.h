@@ -6,10 +6,10 @@
 
 class Preprocess {
 public:
-	Preprocess(const Data& txt, const Data& ptn, const int Threshold);
+	Preprocess(const Data& txt, const Data& ptn, const int Threshold = 0xffff);
 	~Preprocess();
 	int get(int i) const;
-	int* getAll() const;
+	const int* getAll() const;
 	int block() const;
 private:
 	// 0,13,25,50 = 0~13 and 25~50

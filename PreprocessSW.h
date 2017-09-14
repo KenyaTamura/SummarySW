@@ -1,18 +1,18 @@
-#ifndef SW_CUH
-#define SW_CUH
+#ifndef PREPROCESSSW_CUH
+#define PREPROCESSSW_CUH
 
 class Data;
 class Preprocess;
 
-class SW{
+class PreprocessSW{
 public:
-	SW(Data& txt, Data& ptn, Preprocess& prepro, int threshold = 0xffff);
-	~SW();
+	PreprocessSW(const Data& txt, const Data& ptn, const Preprocess& prepro, int threshold = 0xffff);
+	~PreprocessSW();
 private:
-	void call_DP(Data& txt, Data& ptn, Preprocess& prepro);
-	void checkScore(const char* direction, const int* score, Data& txt);
-	void traceback(const char* direction, const Data& txt, int txt_point, int ptn_point); 
-	void show(const char* score, Data& txt, Data& ptn);
+	void call_DP(const Data& txt, const Data& ptn, const Preprocess& prepro);
+	void checkScore(const char* direction, const int* score, const Data& txt) const;
+	void traceback(const char* direction, const Data& txt, int txt_point, int ptn_point) const; 
+	void show(const char* score, const Data& txt, const Data& ptn) const;
 };
 
 

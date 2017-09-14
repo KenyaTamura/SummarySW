@@ -1,7 +1,8 @@
-#include"Preprocess.h"
-#include"Cost.h"
 #include<algorithm>
 #include<iostream>
+
+#include"Preprocess.h"
+#include"Gain.h"
 
 using namespace std;
 
@@ -42,7 +43,7 @@ int Preprocess::get(int i) const {
 	return -1;
 }
 
-int* Preprocess::getAll() const{
+const int* Preprocess::getAll() const{
 	return mRange;
 }
 
@@ -80,7 +81,7 @@ int Preprocess::get_score(const Hash& hash1, const Hash& hash2) const {
 	score += std::min(hash1.CYT, hash2.CYT);
 	score += std::min(hash1.GUA, hash2.GUA);
 	score += std::min(hash1.TYM, hash2.TYM);
-	return score;
+	return score * MATCH;
 }
 
 void Preprocess::shape(list<int>& origin, const int interval) {

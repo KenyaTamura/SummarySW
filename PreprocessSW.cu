@@ -5,9 +5,11 @@
 
 #include<iostream>
 #include<iomanip>
-#include"SW.h"
+
+#include"PreprocessSW.h"
 #include"Data.h"
 #include"Preprocess.h"
+#include"Gain.h"
 
 // Lenght of each data
 __constant__ int gcT_size;
@@ -32,12 +34,12 @@ enum{
 	Horizon,
 };
 
-//__device__ void traceback(const char* dTrace, const char* dTxt, int trace_point, int txt_point);
+using namespace std;
 
-SW::SW(Data& txt, Data& ptn, Preprocess& prepro, int threshold){
+PreprocessSW::PreprocessSW(const Data& txt, const Data& ptn, const Preprocess& prepro, int threshold){
 	// Sieze check
 	if(ptn.size() > 1024 || ptn.size() * txt.size() > 1024 * 1024 * 1024){
-		std::cout << "Too large size" << std::endl;
+		cout << "Too large size" << endl;
 		return;
 	}
 	// Set value in constant memory
@@ -48,20 +50,20 @@ SW::SW(Data& txt, Data& ptn, Preprocess& prepro, int threshold){
 	cudaMemcpyToSymbol(gcThre, &threshold, sizeof(int));
 	cudaMemcpyToSymbol(gcP_seq, ptn.data(), sizeof(char) * ptn.size());
 	// TODO Cost and gain
-	int gain = 3;
+	int gain = MATCH;
 	cudaMemcpyToSymbol(gcMatch, &gain, sizeof(int));
-	gain = -2;
+	gain = MISS;
 	cudaMemcpyToSymbol(gcMiss, &gain, sizeof(int));
-	gain = -2;
+	gain = EXT;
 	cudaMemcpyToSymbol(gcExtend, &gain, sizeof(int));
-	gain = -3;
+	gain = BEG;
 	cudaMemcpyToSymbol(gcBegin, &gain, sizeof(int));
 	// Dynamic Programing part by call_DP
 	call_DP(txt, ptn, prepro);
 	std::cout << "End of the SW algorithm" << std::endl;
 }
 
-SW::~SW(){
+PreprocessSW::~PreprocessSW(){
 
 }
 
@@ -172,7 +174,7 @@ __global__ void DP(char* dT_seq, int* dRange, char* dTrace, int* dScore){
 }
 
 // Provisional
-void SW::call_DP(Data& txt, Data& ptn, Preprocess& prepro){
+void PreprocessSW::call_DP(const Data& txt, const Data& ptn, const Preprocess& prepro){
 	// Set txt
 	char* dT_seq;
 	cudaMalloc((void**)&dT_seq, sizeof(char)*txt.size());
@@ -211,43 +213,8 @@ void SW::call_DP(Data& txt, Data& ptn, Preprocess& prepro){
 	cudaFree(dRange);
 }
 
-/*
-__device__ void traceback(const char* dTrace, const char* dTxt, int trace_point, int txt_point){
-	// Store the result, get enough size
-	char *ans = new char[gcP_size * 2];
-	// Point of result array
-	int p = 0;
-	int txt = txt_point;
-	int trace = trace_point;
-	// Traceback
-	while(trace >= 0){
-		switch(dTrace[trace]){
-		case Diagonal:
-			ans[p++] = dTxt[txt--];
-			trace -= gcT_size + 1;
-			break;
-		case Vertical:
-			ans[p++] = '+';
-			trace -= gcT_size;
-			break;
-		case Horizon:
-			ans[p++] = '-';
-			--trace;
-			--txt;
-			break;
-		case Zero:	// End
-			trace = -1;
-		}
-	}
-	// This array has reverse answer
-	for(int i=p-1;i>=0;--i){ printf("%c", ans[i]); }
-	printf("  %d ~ %d \n", txt+1, txt_point);
-	delete[] ans;
-}
-*/
-
 // score -> 0~16 : 17~31 = score : point of ptn
-void SW::checkScore(const char* direction, const int* score, Data& txt){
+void PreprocessSW::checkScore(const char* direction, const int* score, const Data& txt) const{
 	// get the max score
 	int x = 0, y = 0, max = 0;
 	for(int i=0; i<txt.size(); ++i){
@@ -258,13 +225,13 @@ void SW::checkScore(const char* direction, const int* score, Data& txt){
 			max = result;
 		}
 	}
-	std::cout << "max score is " << max << std::endl;
+	cout << "max score is " << max << endl;
 	if(max != 0){
 		traceback(direction, txt, x, y);
 	}
 }
 
-void SW::traceback(const char* direction, const Data& txt, int txt_point, int ptn_point){
+void PreprocessSW::traceback(const char* direction, const Data& txt, int txt_point, int ptn_point) const{
 	// Store the result, get enough size
 	char *ans = new char[1024 * 2];
 	// Point of result array
@@ -275,7 +242,7 @@ void SW::traceback(const char* direction, const Data& txt, int txt_point, int pt
 	while(trace >= 0){
 		switch(direction[trace]){
 		case Diagonal:
-			ans[p++] = txt(point--);
+			ans[p++] = txt[point--];
 			trace -= txt.size() + 1;
 			break;
 		case Vertical:
@@ -302,18 +269,18 @@ void SW::traceback(const char* direction, const Data& txt, int txt_point, int pt
 }
 
 
-void SW::show(const char* score, Data& txt, Data& ptn){
-	std::cout << "  ";
+void PreprocessSW::show(const char* score, const Data& txt, const Data& ptn) const{
+	cout << "  ";
 	for(int i=0; i < ptn.size(); ++i){
-		std::cout << "  "  << ptn(i);
+		cout << "  "  << ptn[i];
 	}
-	std::cout << std::endl;
+	cout << endl;
 	for(int t=0; t < txt.size(); ++t){
-		std::cout << txt(t) << " ";
+		cout << txt[t] << " ";
 		for(int p=0; p < ptn.size(); ++p){
-			std::cout << std::setw(3) << static_cast<int>(score[t + p*txt.size()]);
+			cout << setw(3) << static_cast<int>(score[t + p*txt.size()]);
 		}
-		std::cout << std::endl;
+		cout << endl;
 	}
 }
 
