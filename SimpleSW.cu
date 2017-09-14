@@ -5,8 +5,10 @@
 
 #include<iostream>
 #include<iomanip>
+
 #include"SimpleSW.h"
 #include"Data.h"
+#include"Gain.h"
 
 // Lenght of each data
 __constant__ int gcT_size;
@@ -49,13 +51,13 @@ SimpleSW::SimpleSW(const Data& txt, const Data& ptn, int threshold){
 	cudaMemcpyToSymbol(gcThre, &threshold, sizeof(int));
 	cudaMemcpyToSymbol(gcP_seq, ptn.data(), sizeof(char) * ptn.size());
 	// TODO Cost and gain
-	int gain = 1;
+	int gain = MATCH;
 	cudaMemcpyToSymbol(gcMatch, &gain, sizeof(int));
-	gain = -1;
+	gain = MISS;
 	cudaMemcpyToSymbol(gcMiss, &gain, sizeof(int));
-	gain = -1;
+	gain = EXT;
 	cudaMemcpyToSymbol(gcExtend, &gain, sizeof(int));
-	gain = -3;
+	gain = -BEG;
 	cudaMemcpyToSymbol(gcBegin, &gain, sizeof(int));
 	// Dynamic Programing part by call_DP
 	call_DP(txt, ptn);
