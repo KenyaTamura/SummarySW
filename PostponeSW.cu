@@ -5,8 +5,10 @@
 
 #include<iostream>
 #include<iomanip>
-#include"SW.h"
+
+#include"PostponeSW.h"
 #include"Data.h"
+#include"Gain.h"
 
 // Lenght of each data
 __constant__ int gcT_size;
@@ -31,12 +33,13 @@ enum{
 	Horizon,
 };
 
-//__device__ void traceback(const char* dTrace, const char* dTxt, int trace_point, int txt_point);
+using namespace std;
 
-SW::SW(Data& txt, Data& ptn, int threshold){
+PostponeSW::PostponeSW(const Data& txt, const Data& ptn, int threshold){
+	cout << "At the beginning of the SW algorithm (Postpone)" << endl;
 	// Sieze check
 	if(ptn.size() > 1024 || ptn.size() * txt.size() > 1024 * 1024 * 1024){
-		std::cout << "Too large size" << std::endl;
+		cout << "Too large size" << endl;
 		return;
 	}
 	// Set value in constant memory
@@ -46,21 +49,21 @@ SW::SW(Data& txt, Data& ptn, int threshold){
 	cudaMemcpyToSymbol(gcP_size, &psize, sizeof(int));
 	cudaMemcpyToSymbol(gcThre, &threshold, sizeof(int));
 	cudaMemcpyToSymbol(gcP_seq, ptn.data(), sizeof(char) * ptn.size());
-	// TODO Cost and gain
-	int gain = 3;
+	// Cost and gain
+	int gain = MATCH;
 	cudaMemcpyToSymbol(gcMatch, &gain, sizeof(int));
-	gain = -2;
+	gain = MISS;
 	cudaMemcpyToSymbol(gcMiss, &gain, sizeof(int));
-	gain = -2;
+	gain = EXT;
 	cudaMemcpyToSymbol(gcExtend, &gain, sizeof(int));
-	gain = -3;
+	gain = BEG;
 	cudaMemcpyToSymbol(gcBegin, &gain, sizeof(int));
 	// Dynamic Programing part by call_DP
 	call_DP(txt, ptn);
-	std::cout << "End of the SW algorithm" << std::endl;
+	cout << "At the end of the SW algorithm" << endl;
 }
 
-SW::~SW(){
+PostponeSW::~PostponeSW(){
 
 }
 
@@ -262,14 +265,11 @@ __global__ void DPwith(char* dT_seq, char* dTrace, int start, int length){
 }
 
 // Provisional
-void SW::call_DP(Data& txt, Data& ptn){
+void PostponeSW::call_DP(const Data& txt, const Data& ptn){
 	// Set txt
 	char* dT_seq;
 	cudaMalloc((void**)&dT_seq, sizeof(char)*txt.size());
 	cudaMemcpy(dT_seq, txt.data(), sizeof(char)*txt.size(), cudaMemcpyHostToDevice);
-	// Set Traceback
-//	char* dTrace;
-//	cudaMalloc((void**)&dTrace, sizeof(char)*txt.size()*ptn.size());
 	// Set Score and point
 	int* dScore;
 	cudaMalloc((void**)&dScore, sizeof(int)*txt.size());
@@ -278,60 +278,19 @@ void SW::call_DP(Data& txt, Data& ptn){
 	cudaMemcpy(dScore, init0, sizeof(int)*txt.size(), cudaMemcpyHostToDevice);
 	// Main process
 	DP<<<1,ptn.size()>>>(dT_seq, dScore);	
-	// Direction copy
-//	char* direction = new char[txt.size()*ptn.size()];
-//	cudaMemcpy(direction, dTrace, sizeof(char)*txt.size()*ptn.size(), cudaMemcpyDeviceToHost);	
-//	show(direction,txt,ptn);
 	// Score and point copy
 	int* score = new int[txt.size()];
 	cudaMemcpy(score, dScore, sizeof(int)*txt.size(), cudaMemcpyDeviceToHost);
 	// traceback if txt has homelogy
 	checkScore(score, txt, ptn);
-//	delete[] direction;
 	delete[] score;
 	delete[] init0;
 	cudaFree(dT_seq);
-//	cudaFree(dTrace);
 	cudaFree(dScore);
 }
 
-/*
-__device__ void traceback(const char* dTrace, const char* dTxt, int trace_point, int txt_point){
-	// Store the result, get enough size
-	char *ans = new char[gcP_size * 2];
-	// Point of result array
-	int p = 0;
-	int txt = txt_point;
-	int trace = trace_point;
-	// Traceback
-	while(trace >= 0){
-		switch(dTrace[trace]){
-		case Diagonal:
-			ans[p++] = dTxt[txt--];
-			trace -= gcT_size + 1;
-			break;
-		case Vertical:
-			ans[p++] = '+';
-			trace -= gcT_size;
-			break;
-		case Horizon:
-			ans[p++] = '-';
-			--trace;
-			--txt;
-			break;
-		case Zero:	// End
-			trace = -1;
-		}
-	}
-	// This array has reverse answer
-	for(int i=p-1;i>=0;--i){ printf("%c", ans[i]); }
-	printf("  %d ~ %d \n", txt+1, txt_point);
-	delete[] ans;
-}
-*/
-
 // score -> 0~16 : 17~31 = score : point of ptn
-void SW::checkScore(const int* score, Data& txt, Data& ptn){
+void PostponeSW::checkScore(const int* score, const Data& txt, const Data& ptn) const{
 	// get the max score
 	int x = 0, y = 0, max = 0;
 	for(int i=0; i<txt.size(); ++i){
@@ -342,15 +301,15 @@ void SW::checkScore(const int* score, Data& txt, Data& ptn){
 			max = result;
 		}
 	}
-	std::cout << "max score is " << max << std::endl;
+	cout << "max score is " << max << endl;
 	if(max != 0){
 		// Call DP in limit range
 		// Set txt
 		char* dT_seq;
-		cudaMalloc((void**)&dT_seq, sizeof(char)*txt.size());	// don't need
+		cudaMalloc((void**)&dT_seq, sizeof(char)*txt.size());	// TODO Too much range
 		cudaMemcpy(dT_seq, txt.data(), sizeof(char)*txt.size(), cudaMemcpyHostToDevice);
 		// Set Traceback
-		int length = ptn.size() * 2;	// Over 
+		int length = ptn.size() * 2;	// Enough
 		char* dTrace;
 		cudaMalloc((void**)&dTrace, sizeof(char)*length*ptn.size());
 		DPwith<<<1,ptn.size()>>>(dT_seq, dTrace, x - length + 1, length);
@@ -365,7 +324,7 @@ void SW::checkScore(const int* score, Data& txt, Data& ptn){
 	}
 }
 
-void SW::traceback(const char* direction, const Data& txt, int x, int y, int length){
+void PostponeSW::traceback(const char* direction, const Data& txt, int x, int y, int length) const{
 	// Store the result, get enough size
 	char *ans = new char[1024 * 2];
 	// Point of result array
@@ -377,7 +336,7 @@ void SW::traceback(const char* direction, const Data& txt, int x, int y, int len
 	while(trace >= 0){
 		switch(direction[trace]){
 		case Diagonal:
-			ans[p++] = txt(txt_point--);
+			ans[p++] = txt[txt_point--];
 			trace -= length + 1;
 			break;
 		case Vertical:
@@ -396,24 +355,24 @@ void SW::traceback(const char* direction, const Data& txt, int x, int y, int len
 		}
 	}
 	// This array has reverse answer
-	for(int i=p-1;i>=0;--i){ printf("%c", ans[i]); }
+	for(int i=p-1;i>=0;--i){ cout << ans[i]; }
 	printf("  %d ~ %d \n", txt_point+1, x);
 	delete[] ans;
 }
 
 
-void SW::show(const char* score, Data& txt, Data& ptn, int start, int length){
-	std::cout << "  ";
+void PostponeSW::show(const char* score, const Data& txt, const Data& ptn, int start, int length) const{
+	cout << "  ";
 	for(int i=0; i < ptn.size(); ++i){
-		std::cout << "  "  << ptn(i);
+		cout << "  "  << ptn[i];
 	}
-	std::cout << std::endl;
+	cout << endl;
 	for(int t=start; t < start + length; ++t){
-		std::cout << txt(t) << " ";
+		cout << txt[t] << " ";
 		for(int p=0; p < ptn.size(); ++p){
-			std::cout << std::setw(3) << static_cast<int>(score[t - start + p*length]);
+			cout << setw(3) << static_cast<int>(score[t - start + p*length]);
 		}
-		std::cout << std::endl;
+		cout << endl;
 	}
 }
 

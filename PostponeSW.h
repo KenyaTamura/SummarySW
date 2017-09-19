@@ -1,17 +1,17 @@
-#ifndef SW_CUH
-#define SW_CUH
+#ifndef POSTPONESW_CUH
+#define POSTPONESW_CUH
 
 class Data;
 
-class PostPoneSW{
+class PostponeSW{
 public:
-	SW(Data& txt, Data& ptn, int threshold = 0xffff);
-	~SW();
+	PostponeSW(const Data& txt, const Data& ptn, int threshold = 0xffff);
+	~PostponeSW();
 private:
-	void call_DP(Data& txt, Data& ptn);
-	void checkScore(const int* score, Data& txt, Data& ptn);
-	void traceback(const char* direction, const Data& txt, int x, int y, int length); 
-	void show(const char* score, Data& txt, Data& ptn, int start, int length);
+	void call_DP(const Data& txt, const Data& ptn);
+	void checkScore(const int* score, const Data& txt, const Data& ptn) const;
+	void traceback(const char* direction, const Data& txt, int x, int y, int length) const; 
+	void show(const char* score, const Data& txt, const Data& ptn, int start, int length) const;
 };
 
 
