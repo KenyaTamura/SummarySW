@@ -9,6 +9,8 @@
 #include"SeparateSW.h"
 #include"PostponeSW.h"
 
+
+
 using namespace std;
 
 int main(int argc, char* argv[]) {
