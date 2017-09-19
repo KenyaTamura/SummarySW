@@ -7,3 +7,5 @@
 *.out
 *.o
 *.txt
+*.csv
+/result/
