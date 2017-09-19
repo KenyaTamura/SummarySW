@@ -6,6 +6,8 @@
 #include"SimpleSW.h"
 #include"Preprocess.h"
 #include"PreprocessSW.h"
+#include"SeparateSW.h"
+#include"PostponeSW.h"
 
 using namespace std;
 
@@ -27,5 +29,9 @@ int main(int argc, char* argv[]) {
 	SimpleSW(base, query, threshold);
 	cout << endl;
 	PreprocessSW(base, query, Preprocess(base, query, threshold), threshold);
+	cout << endl;
+	SeparateSW(base, query, 8, threshold);
+	cout << endl;
+	PostponeSW(base, query, threshold);
 	return 0;
 }
