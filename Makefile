@@ -1,4 +1,4 @@
-OBJS = main.o Data.o SimpleSW.o Preprocess.o PreprocessSW.o 
+OBJS = main.o Data.o SimpleSW.o Preprocess.o PreprocessSW.o SeparateSW.o PostponeSW.o 
 BIN = a.out
 NVCC = nvcc -std=c++11 
 GPP = g++ -std=c++11 -c -o
