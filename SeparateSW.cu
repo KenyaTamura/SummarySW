@@ -275,7 +275,7 @@ void SeparateSW::traceback(const char* direction, const Data& txt, const Data& p
 	}
 	// This array has reverse answer
 	for(int i=p-1;i>=0;--i){ cout << ans[i]; }
-	printf("  %d ~ %d \n", txt_point, end_point);
+	printf("  %d ~ %d \n", txt_point + 1, end_point);
 	delete[] ans;
 }
 

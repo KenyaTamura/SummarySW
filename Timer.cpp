@@ -1,6 +1,7 @@
 #include"Timer.h"
 
 Timer::Timer(){
+	mStart = std::chrono::system_clock::now();
 }
 
 Timer::~Timer(){
@@ -11,7 +12,8 @@ void Timer::start(){
 }
 
 int Timer::finish(){
-	mEnd = std::chrono::system_clock::now();
-	return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	auto end = std::chrono::system_clock::now();
+	auto time = end - mStart;
+	return std::chrono::duration_cast<std::chrono::microseconds>(time).count();
 }
 

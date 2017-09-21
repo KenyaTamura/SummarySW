@@ -10,7 +10,7 @@ public:
 	void start();
 	int finish(); // return time
 private:
-	std::chrono::system_clock::time_point mStart, mEnd;
+	std::chrono::system_clock::time_point mStart;
 };
 
 
